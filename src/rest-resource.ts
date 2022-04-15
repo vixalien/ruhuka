@@ -27,9 +27,9 @@ export default class RESTResource<Item = unknown, Items = unknown>
     super(name, init, options);
 
     this.get_item = this.new_method("get_item", "GET", true);
-    this.put_item = this.new_method("put_item", "GET", true);
-    this.patch_item = this.new_method("patch_item", "GET", true);
-    this.delete_item = this.new_method("delete_item", "GET", true);
+    this.put_item = this.new_method("put_item", "PUT", true);
+    this.patch_item = this.new_method("patch_item", "PATCH", true);
+    this.delete_item = this.new_method("delete_item", "DELETE", true);
     this.post = this.new_method("post", "POST");
     this.get = this.new_method("get", "GET");
   }
