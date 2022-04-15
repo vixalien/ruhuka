@@ -25,6 +25,7 @@ export interface ResourceOptions<Item, Items = any> {
   name: string;
   route: Partial<RouteOptions>;
   rest: boolean;
+  parent_id?: string;
 }
 
 export default class Resource<Item = any, Items = any>
@@ -115,16 +116,20 @@ export default class Resource<Item = any, Items = any>
     return object;
   }
 
-  get url(): string {
+  getURL(parent_id?: string) {
+    let url: string;
     if (this.host) {
-      return this.host;
+      url = this.host;
     } else if (this.parent && this.name) {
-      return (new URL(this.name, this.parent.url)).toString();
+      url = (new URL(this.name, this.parent.getURL(this.options.parent_id))).toString();
     } else {
       throw new Error(
         `Couldn't generate URL for "${this.name}". Please set the "name" and either the "host" or "parent" property`,
       );
     }
+    if (!url.endsWith("/")) url = (url + "/");
+    if (parent_id) url += (parent_id + "/");
+    return url;
   }
 
   new_method<Method = () => any>(
@@ -148,16 +153,31 @@ export default class Resource<Item = any, Items = any>
     return method_req;
   }
 
+  document<CItem = Item, CItems = Items>(
+    id: string,
+    name: string,
+    options: ResourceInitOptions<Item, Items> = {},
+  ): Resource<CItem, CItems> {
+    const resource_options = removeAttribute<ResourceOptions<CItem, CItems>>(this.parse_options(options), "init");
+    const resource = this._add_shortcut(
+      `document_${name}_${id}`,
+      () => new Resource<CItem, CItems>(name, options.init || this, resource_options),
+    ) as Resource<CItem, CItems>;
+    resource.options.parent_id = id;
+    return resource;
+  }
+
   collection<CItem = Item, CItems = Items>(
     name: string,
     options: ResourceInitOptions<Item, Items> = {},
   ): Resource<CItem, CItems> {
     const resource_options = removeAttribute<ResourceOptions<CItem, CItems>>(this.parse_options(options), "init");
-    // @ts-expect-error will return Resource
-    return this._add_shortcut(
-      name,
+    const resource = this._add_shortcut(
+      `collection_${name}`,
       () => new Resource<CItem, CItems>(name, options.init || this, resource_options),
-    );
+    ) as Resource<CItem, CItems>;
+    resource.options.parent_id = undefined;
+    return resource;
   }
 
   collections(
